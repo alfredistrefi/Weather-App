@@ -1,46 +1,72 @@
-const key = 'EFGKOAWPnrx5KBHsy5Ht4iCFMMAAygg4';
+const cityForm = document.querySelector('.change-location');
+const card = document.querySelector('.card');
+const details = document.querySelector('.details');
+const image = document.querySelector('img.time');
+const icon = document.querySelector('.icon img');
 
+// update UI
+const updateUI = (data) => {
 
-//get the weather infomration
-const getWeather  = async (id) => {
-    const base = 'https://dataservice.accuweather.com/currentconditions/v1/';
-    const query = `${id}?apikey=${key}`;//"349727"
+    // destructure properties
+    const {cityDets, weather} = data;
 
+    // update details template
+    details.innerHTML = `
+        <h5 class="my-3">${cityDets.EnglishName}</h5>
+        <div class="my-3">${weather.WeatherText}</div>
+        <div class="display-4 my-4">
+        <span>${weather.Temperature.Metric.Value}</span>
+        <span>&deg;C</span>
+        </div>
+    `;
 
-    const response = await fetch(base + query);
-    const data = await response.json();
+    // update image and icon
+    const iconSrc = `img/icons/${weather.WeatherIcon}.svg`;
+    icon.setAttribute('src', iconSrc);
 
-      
-    console.log('getCity data:', data);
+    let imageSrc = weather.IsDayTime ? 'img/day.svg' : 'img/night.svg';
+    image.setAttribute('src' , imageSrc);
 
-    return data[0];
+    // remove the display none class
+    if (card.classList.contains('d-none')){
+        card.classList.remove('d-none');
+    }
+
 };
 
+const updateCity = async (city) => {
 
-// get city information
-const getCity = async (city) => {
- 
-    const base = 'http://dataservice.accuweather.com/locations/v1/cities/search';
-    const query = `?apikey=${key}&q=${city}`;
+    const cityDets = await getCity(city);
+    const weather = await getWeather(cityDets.Key);
 
-    const response = await fetch(base + query);
-    const data = await response.json();
+    return {
+        cityDets, // equal to cityDets: cityDets
+        weather
+    };
 
-    console.log('getCity data:', data);
-
-    return data[0];
 };
 
+cityForm.addEventListener('submit', e => {
+    //prevent to refresh the page
+    e.preventDefault();
 
-getCity('New York').then(data => {
-    return getWeather(data.key);
-}).then(data =>{
-    console.log(data)
-}).catch(err => console.log(err));
+    // get city value
+    const city = cityForm.city.value.trim();
+    cityForm.reset();
 
+    // update city name
+    updateCity(city)
+    .then(data => updateUI(data))
+    .catch(err => console.log(err.message));
 
+    // set local storage
+    localStorage.setItem('location', city);
+});
 
-
-
-
-///this is to get the infomaion from the website to our  system
+let cityLocation = localStorage.getItem('location');
+if (cityLocation){
+       // update city name
+       updateCity(cityLocation)
+       .then(data => updateUI(data))
+       .catch(err => console.log(err.message));
+}
